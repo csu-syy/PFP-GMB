@@ -361,7 +361,6 @@ def compute_performance_deepgoplus(test_df, go_file, ont):
             new_annots = set()
             for go_id in annots:
                 new_annots |= go.get_anchestors(go_id)
-#                 new_annots.add(go_id)
             preds.append(new_annots)
         
     

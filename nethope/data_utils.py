@@ -25,7 +25,6 @@ def get_go_list(pid_go_file, pid_list):
     pid_go = defaultdict(list)
     with open(pid_go_file) as fp:
         for line in fp:
-            # pid_go[(line_list:=line.split())[0]].append(line_list[1])
             line_list=line.split()
             pid_go[(line_list)[0]].append(line_list[1])
     return [pid_go[pid_] for pid_ in pid_list]
@@ -36,7 +35,6 @@ def get_pid_go(pid_go_file):
         pid_go = defaultdict(list)
         with open(pid_go_file) as fp:
             for line in fp:
-                # pid_go[(line_list:=line.split('\t'))[0]].append(line_list[1])
                 line_list=line.split()
                 pid_go[(line_list)[0]].append(line_list[1])
         return dict(pid_go)
@@ -48,7 +46,6 @@ def get_pid_go_sc(pid_go_sc_file):
     pid_go_sc = defaultdict(dict)
     with open(pid_go_sc_file) as fp:
         for line in fp:
-            # pid_go_sc[line_list[0]][line_list[1]] = float((line_list:=line.split('\t'))[2])
             line_list=line.split()
             pid_go_sc[line_list[0]][line_list[1]] = float((line_list)[2])
     return dict(pid_go_sc)
@@ -108,12 +105,6 @@ def get_pid_go_sc_mat(pid_go_sc, pid_list, go_list):
 
 
 def get_ppi_idx(pid_list, data_y, net_pid_map, data_esm):
-    # print(pid_list[0])
-    # num=0
-    # for i,pid in enumerate(pid_list):
-    #     if pid in net_pid_map:
-    #         num+=1
-    # print(num)
     pid_list_ = tuple(zip(*[(i, pid, net_pid_map[pid]) for i, pid in enumerate(pid_list) if pid in net_pid_map]))
     assert pid_list_
     pid_list_ = (np.asarray(pid_list_[0]), pid_list_[1], np.asarray(pid_list_[2]))

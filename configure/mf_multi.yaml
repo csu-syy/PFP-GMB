@@ -1,0 +1,34 @@
+name: mf
+model_path: models
+mlb: ./data/mf_go.mlb
+results: ./results
+
+network:
+  pid_list: ./data/ppi_pid_list.txt
+  weight_mat: ./data/single_ppi_mat.npz
+  blastdb: ./data/ppi_blastdb
+  dgl: ./data/single_ppi_dgl_top_100
+  egg: ./data/single_egg_dgl_top_100
+  feature: ./data/ppi_interpro.npz
+  esm_ppi: ./data/ppi_esm.npy
+
+train:
+  name: train
+  pid_list_file: ./data/mf_train_pid_list.txt
+  fasta_file: ./data/mf_train.fasta
+  pid_go_file: ./data/mf_train_go.txt
+  esm_feature: ./data/train_data_sequence_embeddings.pkl
+
+valid:
+  name: valid
+  pid_list_file: ./data/mf_test1_pid_list.txt
+  fasta_file: ./data/mf_test1.fasta
+  pid_go_file: ./data/mf_test1_go.txt
+  esm_feature: ./data/test1_data_sequence_embeddings.pkl
+  
+test:
+  name: test
+  pid_list_file: ./data/mf_test2_pid_list.txt
+  fasta_file: ./data/mf_test2.fasta
+  pid_go_file: ./data/mf_test2_go.txt
+  esm_feature: ./data/test2_data_sequence_embeddings.pkl

@@ -25,6 +25,7 @@ def get_go_list(pid_go_file, pid_list):
     pid_go = defaultdict(list)
     with open(pid_go_file) as fp:
         for line in fp:
+            # pid_go[(line_list:=line.split())[0]].append(line_list[1])
             line_list=line.split()
             pid_go[(line_list)[0]].append(line_list[1])
     return [pid_go[pid_] for pid_ in pid_list]
@@ -35,6 +36,7 @@ def get_pid_go(pid_go_file):
         pid_go = defaultdict(list)
         with open(pid_go_file) as fp:
             for line in fp:
+                # pid_go[(line_list:=line.split('\t'))[0]].append(line_list[1])
                 line_list=line.split()
                 pid_go[(line_list)[0]].append(line_list[1])
         return dict(pid_go)
@@ -46,6 +48,7 @@ def get_pid_go_sc(pid_go_sc_file):
     pid_go_sc = defaultdict(dict)
     with open(pid_go_sc_file) as fp:
         for line in fp:
+            # pid_go_sc[line_list[0]][line_list[1]] = float((line_list:=line.split('\t'))[2])
             line_list=line.split()
             pid_go_sc[line_list[0]][line_list[1]] = float((line_list)[2])
     return dict(pid_go_sc)
@@ -62,6 +65,13 @@ def get_data(fasta_file, pid_go_file,pid_esm_file):
         pid_list.append(seq.id)
     
     return pid_list, get_go_list(pid_go_file, pid_list), get_esm_list(pid_esm_file,pid_list)
+
+def get_data_test(fasta_file,pid_esm_file):
+    pid_list = []
+    for seq in SeqIO.parse(fasta_file, 'fasta'):
+        pid_list.append(seq.id)
+    
+    return pid_list, get_esm_list(pid_esm_file,pid_list)
 
 
 def get_mlb(mlb_path: Path, labels=None, **kwargs) -> MultiLabelBinarizer:
@@ -105,6 +115,12 @@ def get_pid_go_sc_mat(pid_go_sc, pid_list, go_list):
 
 
 def get_ppi_idx(pid_list, data_y, net_pid_map, data_esm):
+    # print(pid_list[0])
+    # num=0
+    # for i,pid in enumerate(pid_list):
+    #     if pid in net_pid_map:
+    #         num+=1
+    # print(num)
     pid_list_ = tuple(zip(*[(i, pid, net_pid_map[pid]) for i, pid in enumerate(pid_list) if pid in net_pid_map]))
     assert pid_list_
     pid_list_ = (np.asarray(pid_list_[0]), pid_list_[1], np.asarray(pid_list_[2]))
@@ -141,3 +157,26 @@ def get_homo_ppi_idx(pid_list, fasta_file, data_y, net_pid_map, data_esm, net_bl
             esm_list.append(data_esm[i])
             
     return pid_list_[0], pid_list_[1], pid_list_[2], data_y[pid_list_[0]] if data_y is not None else data_y,esm_list
+
+def get_homo_ppi_idx_test(pid_list, fasta_file, net_pid_map, data_esm, net_blastdb, blast_output_path):
+    blast_sim = blast(net_blastdb, pid_list, fasta_file, blast_output_path)
+    '''
+    blast_sim: dict, blast_sim[query_pid]->{protein1: similarity1, protein2: similarity2, ...}
+    '''
+    pid_list_ = []
+    for i, pid in enumerate(pid_list):
+        blast_sim[pid][None] = float('-inf')
+        pid_ = pid if pid in net_pid_map else max(blast_sim[pid].items(), key=lambda x: x[1])[0]
+        if pid_ is not None:
+            pid_list_.append((i, pid, net_pid_map[pid_]))
+    pid_list_ = tuple(zip(*pid_list_))
+    pid_list_ = (np.asarray(pid_list_[0]), pid_list_[1], np.asarray(pid_list_[2]))
+    
+    if data_esm is None:
+        esm_list=None
+    else:
+        esm_list=[]
+        for i in pid_list_[0]:
+            esm_list.append(data_esm[i])
+            
+    return pid_list_[0], pid_list_[1], pid_list_[2], esm_list

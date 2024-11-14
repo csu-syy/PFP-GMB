@@ -18,8 +18,8 @@ import pickle as pkl
 import joblib
 
 from nethope.models_multi import model
-from nethope.model_multi_utils import test_performance, merge_result
-from nethope.data_utils import get_pid_list, get_data, get_mlb, output_res, get_ppi_idx, get_homo_ppi_idx
+from nethope.model_multi_utils import test_performance_test, merge_result_test
+from nethope.data_utils import get_pid_list, get_data_test, output_res, get_ppi_idx, get_homo_ppi_idx_test
 from nethope.objective import AverageMeter
 from nethope.evaluation import compute_performance
 
@@ -69,16 +69,12 @@ def main(data_cnf, gpu_number):
     network_esm = np.load(data_cnf['network']['esm_ppi'])
     logger.info(F'network_esm type: {type(network_esm)}\nnetwork_esm size: {network_esm.shape}')
 
-    test_pid_list, test_go, test_esm = get_data(fasta_file = data_cnf['test']['fasta_file'],
-                                                pid_go_file = data_cnf['test']['pid_go_file'],
+    test_pid_list, test_esm = get_data_test(fasta_file = data_cnf['test']['fasta_file'],
                                                 pid_esm_file = data_cnf['test']['esm_feature'])
 
 
     mlb = joblib.load(Path(data_cnf['mlb']))
     labels_num = len(mlb.classes_)
-    with warnings.catch_warnings():
-        warnings.simplefilter('ignore')
-        test_y  = mlb.transform(test_go).astype(np.float32)
 
     idx_goid = {}
     goid_idx = {}
@@ -87,16 +83,14 @@ def main(data_cnf, gpu_number):
         goid_idx[goid] = idx
 
     logger.info(F'Number of Labels: {labels_num}')
-    logger.info(F'Size of test y: {test_y.shape}')
 
     '''
     test_res_idx_: [0, 1, 2, ...]
     test_pid_list_: [protein1, protein2, ...]
     test_ppi: [protein1在ppi中的编号, protein2在ppi中的编号, ...]
-    test_y: go
     '''
-    test_res_idx_, test_pid_list_, test_ppi, test_y, test_esm = get_homo_ppi_idx(test_pid_list, data_cnf['test']['fasta_file'],
-                                                                       test_y, net_pid_map, test_esm, net_blastdb,
+    test_res_idx_, test_pid_list_, test_ppi, test_esm = get_homo_ppi_idx_test(test_pid_list, data_cnf['test']['fasta_file'],
+                                                                       net_pid_map, test_esm, net_blastdb,
                                                                        data_cnf['results']/F'{data_name}-test-ppi-blast-out')
     scores = np.zeros((len(test_pid_list), len(mlb.classes_)))
     
@@ -123,14 +117,11 @@ def main(data_cnf, gpu_number):
     cob_pred_df = []
     for i_t_min in range(model_cnf['train']['ensemble_num']):
         logger.info('./save_models/trans_attention_multi_best_{0}_{1}of{2}model.pt'.format(ont, i_t_min, model_cnf['train']['ensemble_num']))
-        if os.path.exists('./save_models'):
-            logger.info("存在")
         if os.path.exists('./save_models/trans_attention_multi_best_{0}_{1}of{2}model.pt'.format(ont, i_t_min, model_cnf['train']['ensemble_num'])):
-            logger.info("进来")
             checkpoint = torch.load('./save_models/trans_attention_multi_best_{0}_{1}of{2}model.pt'.format(ont, i_t_min, model_cnf['train']['ensemble_num']))
             test_model.load_state_dict(checkpoint['model_state_dict'])
-            pred_df = test_performance(test_model, test_dataloader, sampler, egg_graph, network_x, 
-                                       test_ppi, test_pid_list_, test_y, test_esm, 
+            pred_df = test_performance_test(test_model, test_dataloader, sampler, egg_graph, network_x, 
+                                       test_ppi, test_pid_list_, test_esm, 
                                        idx_goid, goid_idx, ont, device, 
                                        save=True, 
                                        save_file='./results/trans_attention_multi_best_{0}_{1}of{2}model.pkl'.format(ont, i_t_min, model_cnf['train']['ensemble_num']), 
@@ -139,8 +130,7 @@ def main(data_cnf, gpu_number):
             print(i_t_min, pred_df.shape)
             logger.info(i_t_min, pred_df.shape)
             logger.info("cob_pred_df", cob_pred_df)
-    # print(cob_pred_df)
-    final_result = merge_result(cob_pred_df)
+    final_result = merge_result_test(cob_pred_df)
     with open('./results/test_{}_final.pkl'.format(ont), 'wb') as fw:
         pkl.dump(final_result, fw)
     print("Done")
